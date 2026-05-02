@@ -572,6 +572,18 @@ void analysis_vector_map(struct character_info* Cinfo, struct GlyphTable* glyphT
 
                 draw_line_bezier(bitmap, prev_x, prev_y, x1, y1, xm, ym, 24);
 
+                }else if (!cur_on && !nex_on) {
+                
+                int next2 = (next1 == end) ? start : next1 + 1;
+                
+                int prev_x = (glyphTable->xCoords[(i == start ? end : i - 1)] + x1) / 2;
+                int prev_y = (glyphTable->yCoords[(i == start ? end : i - 1)] + y1) / 2;
+                
+                int xm = (x1 + x2) / 2;
+                int ym = (y1 + y2) / 2;
+
+                draw_line_bezier(bitmap, prev_x, prev_y, x1, y1, xm, ym, 24);
+
                 }
                 else if(!cur_on && nex_on){
                     int prev_x = (glyphTable->xCoords[(i == start ? end : i - 1)] + x1) / 2;
@@ -580,8 +592,7 @@ void analysis_vector_map(struct character_info* Cinfo, struct GlyphTable* glyphT
                     draw_line_bezier(bitmap, prev_x, prev_y, x1, y1, x1, y2, 24); 
 
                 }   
-            
-        }   
+            }
 
     start = end + 1;
     }
@@ -662,6 +673,41 @@ void bitmap_half(struct bit_map* bitmap){
 
 }
 
+void edge_compensation(struct bit_map* bitmap){
+//有时候边界会缺失，这里直接补起来
+    for (size_t j = 0; j < 3; j++)
+    {
+        uint16_t y0,y1;
+        int i;
+        uint8_t cur = 0,pre = 0;
+        for (i = 0; i < bitmap->y ; i++)
+        {   
+            cur = get_bit(bitmap,j,i);
+            if ((!cur && pre) )
+            {
+                y0 = i;
+                break;
+            }
+            pre =cur;
+        }
+        if ((i < bitmap->y))
+        {   
+            cur = 0;
+            for (size_t i = y0; i < bitmap->y ; i++)
+            {
+                cur = get_bit(bitmap,j,i);
+                if (cur && !pre)
+                {
+                    y1 = i;
+                    draw_line_bresenham(bitmap,j,y0,j,y1);
+                    break;
+                }
+                pre = cur;
+            }
+        }
+    }
+}
+
 void bitmap_resize(struct bit_map* bitmap, uint16_t size){
     int x = bitmap->x;
     uint8_t i = 0;
@@ -679,6 +725,7 @@ void bitmap_resize(struct bit_map* bitmap, uint16_t size){
         bitmap_half(bitmap);
         i--;
     }
+    edge_compensation(bitmap);
 }
 
 
